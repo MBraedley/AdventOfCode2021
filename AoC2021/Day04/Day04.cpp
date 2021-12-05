@@ -1,10 +1,13 @@
-// Day01.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Day04.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+
+#include "BingoBoard.h"
 
 #include <iostream>
 #include <fstream>
 #include <filesystem>
 #include <vector>
+#include <sstream>
 
 int main()
 {
@@ -13,38 +16,28 @@ int main()
 	std::ifstream inStrm;
 	inStrm.open(input);
 
-	std::vector<std::uint32_t> values;
-	std::uint32_t val;
-	while (inStrm >> val)
-	{
-		values.push_back(val);
-	}
+	std::string balls;
+	inStrm >> balls;
 
-	std::uint32_t count = 0;
-	for (std::uint32_t i = 1; i < values.size(); i++)
+	std::vector<BingoBoard> boards;
+	BingoBoard board;
+	while (inStrm >> board)
 	{
-		if (values[i - 1] < values[i])
+		boards.push_back(board);
+	}
+	
+	std::stringstream sstrm(balls);
+	char c;
+	do
+	{
+		int ball;
+		sstrm >> ball;
+		for (auto& b : boards)
 		{
-			count++;
+			if (!b.IsWinner() && b.CallNumber(ball))
+			{
+				std::cout << "Score: " << (b.GetPartialScore() * ball) << std::endl;
+			}
 		}
-	}
-
-	std::cout << "Part 1: " << count << std::endl;
-
-	std::vector<std::uint32_t> rollAvg;
-	for (std::uint32_t i = 1; i < values.size() - 1; i++)
-	{
-		rollAvg.push_back(values[i - 1] + values[i] + values[i + 1]);
-	}
-
-	count = 0;
-	for (std::uint32_t i = 1; i < rollAvg.size(); i++)
-	{
-		if (rollAvg[i - 1] < rollAvg[i])
-		{
-			count++;
-		}
-	}
-
-	std::cout << "Part 2: " << count << std::endl;
+	} while (sstrm >> c);
 }
