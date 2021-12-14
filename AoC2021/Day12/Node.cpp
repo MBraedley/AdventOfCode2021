@@ -19,32 +19,68 @@ void Node::AddNeighbour(std::shared_ptr<Node> neighbour)
 	}
 }
 
-bool Node::TravelTo(std::queue<std::shared_ptr<Node>> route)
+bool Node::TravelTo(Route route)
 {
-	assert(m_CanEnter);
-	route.push(shared_from_this());
-	if (m_IsSmall)
+	if (m_IsSmall && std::find(route.begin(), route.end(), shared_from_this()) != route.end())
 	{
-		m_CanEnter = false;
+		return false;
+	}
+
+	route.push_back(shared_from_this());
+	m_RoutesToHere.push_back(route);
+
+	if (m_Name == "end")
+	{
+		return true;
 	}
 
 	bool reachedEnd = false;
 	for (auto& node : m_Neighbours)
 	{
-		if (node->CanEnter() && node->TravelTo(route))
+		if (node->TravelTo(route))
 		{
 			reachedEnd = true;
 		}
 	}
+
+	return reachedEnd;
 }
 
-EndNode::EndNode(std::string name) :
-	Node(name)
+bool Node::TravelTo(Route route, bool smallDone)
 {
-}
+	auto countThisCave = std::count(route.begin(), route.end(), shared_from_this());
+	if (m_IsSmall && (countThisCave == 2 || countThisCave == 1 && smallDone))
+	{
+		return false;
+	}
 
-bool EndNode::TravelTo(std::queue<std::shared_ptr<Node>> route)
-{
-	m_CompletedRoutes++;
-	return true;
+	if (m_IsSmall && countThisCave == 1)
+	{
+		assert(!smallDone);
+		smallDone = true;
+	}
+
+	if (m_Name == "start" && !route.empty())
+	{
+		return false;
+	}
+
+	route.push_back(shared_from_this());
+	m_RoutesToHere.push_back(route);
+
+	if (m_Name == "end")
+	{
+		return true;
+	}
+
+	bool reachedEnd = false;
+	for (auto& node : m_Neighbours)
+	{
+		if (node->TravelTo(route, smallDone))
+		{
+			reachedEnd = true;
+		}
+	}
+
+	return reachedEnd;
 }
