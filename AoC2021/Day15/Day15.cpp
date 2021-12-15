@@ -16,7 +16,7 @@ struct PosRisk
 
 auto operator<=>(const PosRisk& lhs, const PosRisk& rhs)
 {
-	return lhs.risk <=> rhs.risk;
+	return lhs.risk - (lhs.pos.first + lhs.pos.second) <=> rhs.risk - (rhs.pos.first + rhs.pos.second);
 }
 
 int main()
@@ -42,15 +42,14 @@ int main()
 	std::priority_queue<PosRisk, std::vector<PosRisk>, std::greater<PosRisk>> nextLocations;
 	
 	risks.emplace(std::make_pair<std::size_t, std::size_t>(0, 0), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), 0);
+	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), map[1][0]);
+	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), map[0][1]);
 
 	auto endPos = std::make_pair<std::size_t, std::size_t>(map[0].size() - 1, map.size() - 1);
 
 	while (!nextLocations.empty())
 	{
 		auto [pos, risk] = nextLocations.top();
-		risk += map[pos.second][pos.first];
 		if (!risks.contains(pos) || risks[pos] > risk)
 		{
 			risks[pos] = risk;
@@ -58,28 +57,28 @@ int main()
 			{
 				auto nextPos = pos;
 				nextPos.first--;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.second > 0)
 			{
 				auto nextPos = pos;
 				nextPos.second--;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.first < map[0].size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.first++;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.second < map.size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.second++;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 		}
 
@@ -147,7 +146,6 @@ int main()
 	while (!nextLocations.empty())
 	{
 		auto [pos, risk] = nextLocations.top();
-		risk += map[pos.second][pos.first];
 		if (!risks.contains(pos) || risks[pos] > risk)
 		{
 			risks[pos] = risk;
@@ -155,28 +153,28 @@ int main()
 			{
 				auto nextPos = pos;
 				nextPos.first--;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.second > 0)
 			{
 				auto nextPos = pos;
 				nextPos.second--;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.first < map[0].size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.first++;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 
 			if (pos.second < map.size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.second++;
-				nextLocations.push({ nextPos, risk });
+				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
 			}
 		}
 
