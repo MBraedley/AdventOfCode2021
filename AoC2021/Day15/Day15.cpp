@@ -7,6 +7,7 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <chrono>
 
 struct PosRisk
 {
@@ -16,7 +17,7 @@ struct PosRisk
 
 auto operator<=>(const PosRisk& lhs, const PosRisk& rhs)
 {
-	return lhs.risk - (lhs.pos.first + lhs.pos.second) <=> rhs.risk - (rhs.pos.first + rhs.pos.second);
+	return lhs.risk <=> rhs.risk;
 }
 
 int main()
@@ -94,6 +95,8 @@ int main()
 
 	std::cout << "Part 1: " << risk << std::endl;
 
+	auto startTS = std::chrono::high_resolution_clock::now();
+
 	std::vector<std::vector<std::uint32_t>> largeMap(map);
 
 	for (int i = 1; i < 5; i++)
@@ -138,8 +141,8 @@ int main()
 	std::swap(nextLocations, locs);
 
 	risks.emplace(std::make_pair<std::size_t, std::size_t>(0, 0), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), 0);
+	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), map[1][0]);
+	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), map[0][1]);
 
 	endPos = std::make_pair<std::size_t, std::size_t>(map[0].size() - 1, map.size() - 1);
 
@@ -188,4 +191,7 @@ int main()
 
 	risk = risks[endPos];
 	std::cout << "Part 2: " << risk << std::endl;
+
+	auto endTS = std::chrono::high_resolution_clock::now();
+	std::cout << "Time: " << std::chrono::duration<double, std::milli>(endTS - startTS) << std::endl;
 }
