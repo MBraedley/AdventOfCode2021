@@ -7,16 +7,18 @@
 #include <vector>
 #include <map>
 #include <queue>
+#include <deque>
 #include <chrono>
 
 struct PosRisk
 {
-	std::pair<std::size_t, std::size_t> pos;
-	std::uint32_t risk;
+	std::pair<std::uint16_t, std::uint16_t> pos;
+	std::uint16_t risk;
 };
 
 auto operator<=>(const PosRisk& lhs, const PosRisk& rhs)
 {
+	//return lhs.risk + 1000 - (lhs.pos.first + lhs.pos.second) <=> rhs.risk + 1000 - (rhs.pos.first + rhs.pos.second);
 	return lhs.risk <=> rhs.risk;
 }
 
@@ -27,11 +29,11 @@ int main()
 	std::ifstream inStrm;
 	inStrm.open(input);
 
-	std::vector<std::vector<std::uint32_t>> map;
+	std::vector<std::vector<std::uint16_t>> map;
 	std::string line;
 	while (inStrm >> line)
 	{
-		std::vector<std::uint32_t> row;
+		std::vector<std::uint16_t> row;
 		for (char c : line)
 		{
 			row.push_back(c - '0');
@@ -39,14 +41,14 @@ int main()
 		map.push_back(row);
 	}
 	
-	std::map<std::pair<std::size_t, std::size_t>, std::uint32_t> risks;
+	std::map<std::pair<std::uint16_t, std::uint16_t>, std::uint16_t> risks;
 	std::priority_queue<PosRisk, std::vector<PosRisk>, std::greater<PosRisk>> nextLocations;
 	
-	risks.emplace(std::make_pair<std::size_t, std::size_t>(0, 0), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), map[1][0]);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), map[0][1]);
+	risks.emplace(std::make_pair<std::uint16_t, std::uint16_t>(0, 0), 0);
+	nextLocations.emplace(std::make_pair<std::uint16_t, std::uint16_t>(0, 1), map[1][0]);
+	nextLocations.emplace(std::make_pair<std::uint16_t, std::uint16_t>(1, 0), map[0][1]);
 
-	auto endPos = std::make_pair<std::size_t, std::size_t>(map[0].size() - 1, map.size() - 1);
+	auto endPos = std::make_pair<std::uint16_t, std::uint16_t>(map[0].size() - 1, map.size() - 1);
 
 	while (!nextLocations.empty())
 	{
@@ -58,28 +60,28 @@ int main()
 			{
 				auto nextPos = pos;
 				nextPos.first--;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.second > 0)
 			{
 				auto nextPos = pos;
 				nextPos.second--;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.first < map[0].size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.first++;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.second < map.size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.second++;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 		}
 
@@ -91,21 +93,21 @@ int main()
 		}
 	}
 
-	std::uint32_t risk = risks[endPos];
+	std::uint16_t risk = risks[endPos];
 
 	std::cout << "Part 1: " << risk << std::endl;
 
 	auto startTS = std::chrono::high_resolution_clock::now();
 
-	std::vector<std::vector<std::uint32_t>> largeMap(map);
+	std::vector<std::vector<std::uint16_t>> largeMap(map);
 
 	for (int i = 1; i < 5; i++)
 	{
-		for (std::size_t row = 0; row < map.size(); row++)
+		for (std::uint16_t row = 0; row < map.size(); row++)
 		{
-			for (std::size_t col = 0; col < map[row].size(); col++)
+			for (std::uint16_t col = 0; col < map[row].size(); col++)
 			{
-				std::uint32_t nextVal = (largeMap[row][col] + i) % 9;
+				std::uint16_t nextVal = (largeMap[row][col] + i) % 9;
 				if (nextVal == 0)
 				{
 					nextVal = 9;
@@ -117,12 +119,12 @@ int main()
 
 	for (int i = 1; i < 5; i++)
 	{
-		for (std::size_t row = 0; row < map.size(); row++)
+		for (std::uint16_t row = 0; row < map.size(); row++)
 		{
-			std::vector<std::uint32_t> nextRow;
-			for (std::size_t col = 0; col < largeMap[row].size(); col++)
+			std::vector<std::uint16_t> nextRow;
+			for (std::uint16_t col = 0; col < largeMap[row].size(); col++)
 			{
-				std::uint32_t nextVal = (largeMap[row][col] + i) % 9;
+				std::uint16_t nextVal = (largeMap[row][col] + i) % 9;
 				if (nextVal == 0)
 				{
 					nextVal = 9;
@@ -140,11 +142,11 @@ int main()
 	std::priority_queue<PosRisk, std::vector<PosRisk>, std::greater<PosRisk>> locs;
 	std::swap(nextLocations, locs);
 
-	risks.emplace(std::make_pair<std::size_t, std::size_t>(0, 0), 0);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(0, 1), map[1][0]);
-	nextLocations.emplace(std::make_pair<std::size_t, std::size_t>(1, 0), map[0][1]);
+	risks.emplace(std::make_pair<std::uint16_t, std::uint16_t>(0, 0), 0);
+	nextLocations.emplace(std::make_pair<std::uint16_t, std::uint16_t>(0, 1), map[1][0]);
+	nextLocations.emplace(std::make_pair<std::uint16_t, std::uint16_t>(1, 0), map[0][1]);
 
-	endPos = std::make_pair<std::size_t, std::size_t>(map[0].size() - 1, map.size() - 1);
+	endPos = std::make_pair<std::uint16_t, std::uint16_t>(map[0].size() - 1, map.size() - 1);
 
 	while (!nextLocations.empty())
 	{
@@ -156,28 +158,28 @@ int main()
 			{
 				auto nextPos = pos;
 				nextPos.first--;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.second > 0)
 			{
 				auto nextPos = pos;
 				nextPos.second--;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.first < map[0].size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.first++;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 
 			if (pos.second < map.size() - 1)
 			{
 				auto nextPos = pos;
 				nextPos.second++;
-				nextLocations.push({ nextPos, risk + map[nextPos.second][nextPos.first] });
+				nextLocations.push(PosRisk(nextPos, risk + map[nextPos.second][nextPos.first]));
 			}
 		}
 
