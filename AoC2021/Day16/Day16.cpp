@@ -50,4 +50,6 @@ int main()
 	Packet p(dataStrm);
 
 	std::cout << "Part 1: " << p.GetVerionSum() << std::endl;
+
+	std::cout << "Part 2: " << p.GetValue() << std::endl;
 }

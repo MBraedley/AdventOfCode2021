@@ -1,5 +1,7 @@
 #include "Packet.h"
 
+#include <cassert>
+
 Packet::Packet(std::deque<bool>& dataStrm)
 {
 	m_Version[2] = dataStrm.front();
@@ -107,4 +109,77 @@ std::uint32_t Packet::GetVerionSum()
 	}
 
 	return ret;
+}
+
+std::uint64_t Packet::GetValue()
+{
+	std::uint64_t val = 0;
+	if (std::holds_alternative<std::vector<LiteralVal>>(m_Payload))
+	{
+		for (auto litVal : std::get<std::vector<LiteralVal>>(m_Payload))
+		{
+			val <<= 4;
+			val += litVal.m_ValPortion.to_ulong();
+		}
+		return val;
+	}
+
+	std::vector<std::shared_ptr<Packet>> payloadPackets;
+	if (std::holds_alternative<std::shared_ptr<BitLengthPayload>>(m_Payload))
+	{
+		payloadPackets = std::get<std::shared_ptr<BitLengthPayload>>(m_Payload)->m_Payload;
+	}
+	else if (std::holds_alternative<std::shared_ptr<PacketCountPayload>>(m_Payload))
+	{
+		payloadPackets = std::get<std::shared_ptr<PacketCountPayload>>(m_Payload)->m_Payload;
+	}
+
+	switch (m_Type.to_ulong())
+	{
+	case 0:
+		for (auto& packet : payloadPackets)
+		{
+			val += packet->GetValue();
+		}
+		break;
+	case 1:
+		val = 1;
+		for (auto& packet : payloadPackets)
+		{
+			val *= packet->GetValue();
+		}
+		break;
+	case 2:
+		val = std::numeric_limits<std::uint64_t>::max();
+		for (auto& packet : payloadPackets)
+		{
+			val = std::min(val, packet->GetValue());
+		}
+		break;
+	case 3:
+		for (auto& packet : payloadPackets)
+		{
+			val = std::max(val, packet->GetValue());
+		}
+		break;
+	case 4:
+		assert(false);
+		break;
+	case 5:
+		assert(payloadPackets.size() == 2);
+		val = payloadPackets[0]->GetValue() > payloadPackets[1]->GetValue() ? 1 : 0;
+		break;
+	case 6:
+		assert(payloadPackets.size() == 2);
+		val = payloadPackets[0]->GetValue() < payloadPackets[1]->GetValue() ? 1 : 0;
+		break;
+	case 7:
+		assert(payloadPackets.size() == 2);
+		val = payloadPackets[0]->GetValue() == payloadPackets[1]->GetValue() ? 1 : 0;
+		break;
+	default:
+		assert(false);
+		break;
+	}
+	return val;
 }

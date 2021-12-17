@@ -41,6 +41,8 @@ public:
 
 	std::uint32_t GetVerionSum();
 
+	std::uint64_t GetValue();
+
 private:
 	std::bitset<3> m_Version;
 	std::bitset<3> m_Type;
