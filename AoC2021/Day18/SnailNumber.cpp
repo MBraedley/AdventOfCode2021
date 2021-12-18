@@ -9,9 +9,10 @@
 SnailNumber operator+(const SnailNumber& lhs, const SnailNumber& rhs)
 {
 	SnailNumber res;
-	res.m_Value = std::make_shared<SnailNumber::SnailNumberVal>(lhs.m_Value, rhs.m_Value);
+	res.m_Value = std::make_shared<SnailNumber::SnailNumberVal>();
+	res.m_Value->left = std::make_shared<SnailNumber::SnailNumberVariant>(lhs.m_Value);
+	res.m_Value->right = std::make_shared<SnailNumber::SnailNumberVariant>(rhs.m_Value);
 
-	std::cout << res.ToString() << std::endl;
 	res.Reduce();
 	return res;
 }
@@ -45,28 +46,39 @@ void SnailNumber::Reduce()
 
 bool SnailNumber::Explode()
 {
-	if (GetNestingDepth(m_Value) <= 4)
+	auto explodingPair = GetExplodingPair(m_Value, 1);
+
+	if (explodingPair == nullptr)
 	{
 		return false;
 	}
 
-	auto [left, var, right] = GetExplodingPair();
+	assert(std::holds_alternative<pSnailNumberVal>(*explodingPair));
+	assert(std::holds_alternative<int>(*std::get<pSnailNumberVal>(*explodingPair)->left));
+	assert(std::holds_alternative<int>(*std::get<pSnailNumberVal>(*explodingPair)->right));
 
-	assert(std::holds_alternative<pSnailNumberVal>(var.get()));
-	auto pVal = std::get<pSnailNumberVal>(var.get());
-	assert(std::holds_alternative<int>(pVal->left) && std::holds_alternative<int>(pVal->right));
+	pSnailNumberVariant leftCandidate;
+	pSnailNumberVariant rightCandidate;
 
-	if (left.has_value())
+	bool leftFound = GetValueToLeft(explodingPair, leftCandidate, m_Value);
+	bool rightFound = GetValueToRight(explodingPair, rightCandidate, m_Value);
+
+	assert(leftFound);
+	assert(rightFound);
+
+	if (leftCandidate != nullptr)
 	{
-		left.value() += std::get<int>(pVal->left);
+		assert(std::holds_alternative<int>(*leftCandidate));
+		std::get<int>(*leftCandidate) += std::get<int>(*std::get<pSnailNumberVal>(*explodingPair)->left);
 	}
 
-	if (right.has_value())
+	if (rightCandidate != nullptr)
 	{
-		right.value() += std::get<int>(pVal->right);
+		assert(std::holds_alternative<int>(*rightCandidate));
+		std::get<int>(*rightCandidate) += std::get<int>(*std::get<pSnailNumberVal>(*explodingPair)->right);
 	}
 
-	var.get() = 0;
+	*explodingPair = 0;
 
 	return true;
 }
@@ -78,161 +90,168 @@ bool SnailNumber::Split()
 
 bool SnailNumber::Split(pSnailNumberVal val)
 {
-	if (std::holds_alternative<pSnailNumberVal>(val->left))
+	if (std::holds_alternative<pSnailNumberVal>(*val->left))
 	{
-		if (Split(std::get<pSnailNumberVal>(val->left)))
+		if (Split(std::get<pSnailNumberVal>(*val->left)))
 		{
 			return true;
 		}
 	}
-	else if (std::holds_alternative<int>(val->left) && std::get<int>(val->left) >= 10)
+	else if (std::holds_alternative<int>(*val->left) && std::get<int>(*val->left) >= 10)
 	{
-		int currentVal = std::get<int>(val->left);
-		val->left = std::make_shared<SnailNumberVal>(currentVal / 2, (currentVal + 1) / 2);
+		int currentVal = std::get<int>(*val->left);
+		*val->left = std::make_shared<SnailNumberVal>(std::make_shared<SnailNumberVariant>(currentVal / 2), std::make_shared<SnailNumberVariant>((currentVal + 1) / 2));
 		return true;
 	}
-	
-	if (std::holds_alternative<pSnailNumberVal>(val->right))
+
+	if (std::holds_alternative<pSnailNumberVal>(*val->right))
 	{
-		if (Split(std::get<pSnailNumberVal>(val->right)))
+		if (Split(std::get<pSnailNumberVal>(*val->right)))
 		{
 			return true;
 		}
 	}
-	else if (std::holds_alternative<int>(val->right) && std::get<int>(val->right) >= 10)
+	else if (std::holds_alternative<int>(*val->right) && std::get<int>(*val->right) >= 10)
 	{
-		int currentVal = std::get<int>(val->right);
-		val->right = std::make_shared<SnailNumberVal>(currentVal / 2, (currentVal + 1) / 2);
+		int currentVal = std::get<int>(*val->right);
+		*val->right = std::make_shared<SnailNumberVal>(std::make_shared<SnailNumberVariant>(currentVal / 2), std::make_shared<SnailNumberVariant>((currentVal + 1) / 2));
 		return true;
 	}
 
 	return false;
 }
 
-std::uint32_t SnailNumber::GetNestingDepth(pSnailNumberVal val)
+SnailNumber::pSnailNumberVariant SnailNumber::GetExplodingPair(pSnailNumberVal val, int level)
 {
-	std::uint32_t left = 1;
-	if (std::holds_alternative<pSnailNumberVal>(val->left))
+	pSnailNumberVariant ret = nullptr;
+	if (std::holds_alternative<pSnailNumberVal>(*val->left))
 	{
-		left += GetNestingDepth(std::get<pSnailNumberVal>(val->left));
+		auto nextPair = val->left;
+		if (level >= 4)
+		{
+			return nextPair;
+		}
+		ret = GetExplodingPair(std::get<pSnailNumberVal>(*nextPair), level + 1);
+
+		if (ret != nullptr)
+		{
+			return ret;
+		}
 	}
 
-	std::uint32_t right = 1;
-	if (std::holds_alternative<pSnailNumberVal>(val->right))
+	if (std::holds_alternative<pSnailNumberVal>(*val->right))
 	{
-		right += GetNestingDepth(std::get<pSnailNumberVal>(val->right));
+		auto nextPair = val->right;
+		if (level >= 4)
+		{
+			return nextPair;
+		}
+		ret = GetExplodingPair(std::get<pSnailNumberVal>(*nextPair), level + 1);
+
+		if (ret != nullptr)
+		{
+			return ret;
+		}
 	}
 
-	return std::max(left, right);
+	return nullptr;
 }
 
-SnailNumber::ExplodingPairVals SnailNumber::GetExplodingPair()
+bool SnailNumber::GetValueToLeft(const pSnailNumberVariant exploder, pSnailNumberVariant& leftCandidate, pSnailNumberVal val)
 {
-	std::cout << ToString() << std::endl;
-	bool explodingPairFound = false;
-	std::optional<std::reference_wrapper<int>> left;
-	std::optional<std::reference_wrapper<int>> right;
-
-	std::optional<std::reference_wrapper<SnailNumberVariant>> var;
-
-	std::stack<pSnailNumberVal> searchingStack;
-	std::stack<bool> leftRightStack;
-
-	searchingStack.push(m_Value);
-	leftRightStack.push(false);
-
-	while (!explodingPairFound)
+	if (std::holds_alternative<int>(*val->left))
 	{
-		if (!leftRightStack.top())
-		{
-			if (std::holds_alternative<int>(searchingStack.top()->left))
-			{
-				left = std::get<int>(searchingStack.top()->left);
-				leftRightStack.top() = true;
-			}
-			else if (searchingStack.size() >= 4)	//we've found our exploding pair
-			{
-				explodingPairFound = true;
-				var = searchingStack.top()->left;
-				leftRightStack.top() = true;
-			}
-			else
-			{
-				leftRightStack.top() = true;
-				searchingStack.push(std::get<pSnailNumberVal>(searchingStack.top()->left));
-				leftRightStack.push(false);
-			}
-		}
-		else
-		{
-			if (std::holds_alternative<int>(searchingStack.top()->right))
-			{
-				left = std::get<int>(searchingStack.top()->right);
-
-				while (leftRightStack.top())
-				{
-					leftRightStack.pop();
-					searchingStack.pop();
-				}
-
-				leftRightStack.top() = true;
-			}
-			else if (searchingStack.size() >= 4)	//we've found our exploding pair
-			{
-				explodingPairFound = true;
-				var = searchingStack.top()->right;
-				//immediately pop the stacks to allow searching for the right side value
-				leftRightStack.pop();
-				searchingStack.pop();
-			}
-			else
-			{
-				searchingStack.push(std::get<pSnailNumberVal>(searchingStack.top()->right));
-				leftRightStack.push(false);
-			}
-		}
-	}
-
-	while (!right.has_value() && !searchingStack.empty())
-	{
-		if (!leftRightStack.top())
-		{
-			if (std::holds_alternative<int>(searchingStack.top()->left))
-			{
-				right = std::get<int>(searchingStack.top()->left);
-			}
-			else
-			{
-				leftRightStack.push(false);
-				searchingStack.push(std::get<pSnailNumberVal>(searchingStack.top()->left));
-			}
-		}
-		else
-		{
-			if (std::holds_alternative<int>(searchingStack.top()->right))
-			{
-				right = std::get<int>(searchingStack.top()->right);
-			}
-			else
-			{
-				leftRightStack.pop();
-				searchingStack.pop();
-			}
-		}
-	}
-
-	return std::make_tuple(left, var.value(), right);
-}
-
-std::uint64_t SnailNumber::GetMagnitude(SnailNumberVariant& val)
-{
-	if (std::holds_alternative<int>(val))
-	{
-		return std::get<int>(val);
+		leftCandidate = val->left;
 	}
 	else
 	{
-		return GetMagnitude(std::get<pSnailNumberVal>(val));
+		if (val->left == exploder)
+		{
+			return true;
+		}
+
+		bool found = GetValueToLeft(exploder, leftCandidate, std::get<pSnailNumberVal>(*val->left));
+
+		if (found)
+		{
+			return true;
+		}
+	}
+
+	if (std::holds_alternative<int>(*val->right))
+	{
+		leftCandidate = val->right;
+	}
+	else
+	{
+		if (val->right == exploder)
+		{
+			return true;
+		}
+
+		bool found = GetValueToLeft(exploder, leftCandidate, std::get<pSnailNumberVal>(*val->right));
+
+		if (found)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool SnailNumber::GetValueToRight(const pSnailNumberVariant exploder, pSnailNumberVariant& rightCandidate, pSnailNumberVal val)
+{
+	if (std::holds_alternative<int>(*val->right))
+	{
+		rightCandidate = val->right;
+	}
+	else
+	{
+		if (val->right == exploder)
+		{
+			return true;
+		}
+
+		bool found = GetValueToRight(exploder, rightCandidate, std::get<pSnailNumberVal>(*val->right));
+
+		if (found)
+		{
+			return true;
+		}
+	}
+
+	if (std::holds_alternative<int>(*val->left))
+	{
+		rightCandidate = val->left;
+	}
+	else
+	{
+		if (val->left == exploder)
+		{
+			return true;
+		}
+
+		bool found = GetValueToRight(exploder, rightCandidate, std::get<pSnailNumberVal>(*val->left));
+
+		if (found)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+std::uint64_t SnailNumber::GetMagnitude(pSnailNumberVariant val)
+{
+	if (std::holds_alternative<int>(*val))
+	{
+		return std::get<int>(*val);
+	}
+	else
+	{
+		return GetMagnitude(std::get<pSnailNumberVal>(*val));
 	}
 }
 
@@ -241,21 +260,21 @@ std::uint64_t SnailNumber::GetMagnitude(pSnailNumberVal val)
 	return 3 * GetMagnitude(val->left) + 2 * GetMagnitude(val->right);
 }
 
-std::string SnailNumber::ToString(SnailNumberVariant& val)
+std::string SnailNumber::ToString(pSnailNumberVariant val)
 {
-	if (std::holds_alternative<int>(val))
+	if (std::holds_alternative<int>(*val))
 	{
-		return std::to_string(std::get<int>(val));
+		return std::to_string(std::get<int>(*val));
 	}
 	else
 	{
-		return ToString(std::get<pSnailNumberVal>(val));
+		return ToString(std::get<pSnailNumberVal>(*val));
 	}
 }
 
 std::string SnailNumber::ToString(pSnailNumberVal val)
 {
-	return "[" + ToString(val->left) + "," + ToString(val->right) +"]";
+	return "[" + ToString(val->left) + "," + ToString(val->right) + "]";
 }
 
 void SnailNumber::ParseInputString(const std::string& val)
@@ -272,11 +291,11 @@ void SnailNumber::ParseInputString(const std::string& val)
 				assert(!leftRightStack.empty());
 				if (!leftRightStack.top())
 				{
-					parsingStack.top()->left = nextVal;
+					parsingStack.top()->left = std::make_shared<SnailNumberVariant>(nextVal);
 				}
 				else
 				{
-					parsingStack.top()->right = nextVal;
+					parsingStack.top()->right = std::make_shared<SnailNumberVariant>(nextVal);
 				}
 			}
 			else
@@ -301,11 +320,11 @@ void SnailNumber::ParseInputString(const std::string& val)
 			int nextVal = c - '0';
 			if (!leftRightStack.top())
 			{
-				parsingStack.top()->left = nextVal;
+				parsingStack.top()->left = std::make_shared<SnailNumberVariant>(nextVal);
 			}
 			else
 			{
-				parsingStack.top()->right = nextVal;
+				parsingStack.top()->right = std::make_shared<SnailNumberVariant>(nextVal);
 			}
 		}
 	}
