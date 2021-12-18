@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include <queue>
+#include <vector>
 
 int main()
 {
@@ -14,26 +14,35 @@ int main()
 	std::ifstream inStrm;
 	inStrm.open(input);
 
-	std::queue<SnailNumber> values;
+	std::vector<std::string> values;
 	std::string val;
 	while (inStrm >> val)
 	{
-		values.emplace(val);
+		values.emplace_back(val);
 	}
 
-	SnailNumber sum = values.front();
-	values.pop();
+	SnailNumber sum(values[0]);
 
-	while (!values.empty())
+	for (std::size_t i = 1; i < values.size(); i++)
 	{
-		//std::cout << sum.ToString() << " + " << values.front().ToString();
-		sum = sum + values.front();
-		values.pop();
-		//std::cout << " = " << sum.ToString() << std::endl;
+		sum = sum + SnailNumber(values[i]);
 	}
 
 	std::cout << "Part 1: " << sum.GetMagnitude() << std::endl;
 
+	std::uint64_t maxMag = 0;
 
-	//std::cout << "Part 2: " << count << std::endl;
+	for (std::size_t i = 0; i < values.size(); i++)
+	{
+		for (std::size_t j = 0; j < values.size(); j++)
+		{
+			if (i != j)
+			{
+				auto num = SnailNumber(values[i]) + SnailNumber(values[j]);
+				maxMag = std::max(maxMag, num.GetMagnitude());
+			}
+		}
+	}
+
+	std::cout << "Part 2: " << maxMag << std::endl;
 }
