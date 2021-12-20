@@ -64,5 +64,5 @@ int main()
 	std::cout << "Part 1: " << scanners.front().GetBeaconCount() << std::endl;
 
 
-	//std::cout << "Part 2: " << count << std::endl;
+	std::cout << "Part 2: " << scanners.front().GetLargestDistance() << std::endl;
 }

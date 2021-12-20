@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <set>
+#include <map>
 #include <optional>
 #include <vector>
 #include <functional>
@@ -32,6 +33,7 @@ auto operator<=>(const BeaconCoords& lhs, const BeaconCoords& rhs);
 auto operator<=>(const BeaconDistance& lhs, const BeaconDistance& rhs);
 BeaconCoords operator+(const BeaconCoords& lhs, const BeaconDistance& rhs);
 BeaconDistance operator-(const BeaconCoords& lhs, const BeaconCoords& rhs);
+BeaconDistance operator+(const BeaconDistance& lhs, const BeaconDistance& rhs);
 
 class Scanner
 {
@@ -50,9 +52,12 @@ public:
 	void MergeScanner(const Scanner& other, const BeaconDistance& dist);
 
 	std::size_t GetBeaconCount() const { return m_VisibleBeacons.size(); }
+	int GetLargestDistance() const;
 
 	friend std::istream& operator>>(std::istream& inStrm, Scanner& scanner);
 private:
 	int m_Id = 0;
 	std::set<BeaconCoords> m_VisibleBeacons;
+
+	std::map<int, BeaconDistance> m_ScannerDistances;
 };

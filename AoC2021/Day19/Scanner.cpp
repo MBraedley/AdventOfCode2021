@@ -49,6 +49,11 @@ BeaconDistance operator-(const BeaconCoords& lhs, const BeaconCoords& rhs)
 	return dist;
 }
 
+BeaconDistance operator+(const BeaconDistance& lhs, const BeaconDistance& rhs)
+{
+	return {lhs.dx + rhs.dx, lhs.dy + rhs.dy, lhs.dz + rhs.dz};
+}
+
 Scanner::Scanner(int id) :
 	m_Id(id)
 {
@@ -92,6 +97,11 @@ void Scanner::RotateX()
 	}
 
 	std::swap(m_VisibleBeacons, rot);
+
+	for (auto [id, dist] : m_ScannerDistances)
+	{
+		m_ScannerDistances[id] = { dist.dx, dist.dz, -dist.dy };
+	}
 }
 
 void Scanner::RotateY()
@@ -104,6 +114,11 @@ void Scanner::RotateY()
 	}
 
 	std::swap(m_VisibleBeacons, rot);
+
+	for (auto [id, dist] : m_ScannerDistances)
+	{
+		m_ScannerDistances[id] = { -dist.dz, dist.dy, dist.dx };
+	}
 }
 
 void Scanner::RotateZ()
@@ -116,6 +131,11 @@ void Scanner::RotateZ()
 	}
 
 	std::swap(m_VisibleBeacons, rot);
+
+	for (auto [id, dist] : m_ScannerDistances)
+	{
+		m_ScannerDistances[id] = { dist.dy, -dist.dx, dist.dz };
+	}
 }
 
 std::optional<BeaconDistance> Scanner::GetScannerOverlap(const Scanner& other)
@@ -144,6 +164,31 @@ void Scanner::MergeScanner(const Scanner& other, const BeaconDistance& dist)
 	{
 		AddBeacon(beacon + dist);
 	}
+
+	m_ScannerDistances.emplace(other.m_Id, dist);
+	for (auto [id, pos] : other.m_ScannerDistances)
+	{
+		m_ScannerDistances.emplace(id, pos + dist);
+	}
+}
+
+int Scanner::GetLargestDistance() const
+{
+	int maxDist = 0;
+
+	for (auto [id, dist] : m_ScannerDistances)
+	{
+		int manDist = std::abs(dist.dx) + std::abs(dist.dy) + std::abs(dist.dz);
+		maxDist = std::max(maxDist, manDist);
+
+		for (auto [id2, dist2] : m_ScannerDistances)
+		{
+			manDist = std::abs(dist.dx - dist2.dx) + std::abs(dist.dy - dist2.dy) + std::abs(dist.dz - dist2.dz);
+			maxDist = std::max(maxDist, manDist);
+		}
+	}
+
+	return maxDist;
 }
 
 std::istream& operator>>(std::istream& inStrm, Scanner& scanner)
