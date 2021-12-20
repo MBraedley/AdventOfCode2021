@@ -2,6 +2,8 @@
 #include <iostream>
 #include <set>
 #include <optional>
+#include <vector>
+#include <functional>
 
 struct BeaconDistance
 {
@@ -39,16 +41,18 @@ public:
 
 	void AddBeacon(const BeaconCoords& beacon);
 
-	Scanner RotateX();
-	Scanner RotateY();
-	Scanner RotateZ();
+	void IndexedRotation(std::size_t index);
+	void RotateX();
+	void RotateY();
+	void RotateZ();
 
 	std::optional<BeaconDistance> GetScannerOverlap(const Scanner& other);
-	void MergeScanner(const Scanner& other, const BeaconDistance& dist );
+	void MergeScanner(const Scanner& other, const BeaconDistance& dist);
+
+	std::size_t GetBeaconCount() const { return m_VisibleBeacons.size(); }
 
 	friend std::istream& operator>>(std::istream& inStrm, Scanner& scanner);
 private:
 	int m_Id = 0;
 	std::set<BeaconCoords> m_VisibleBeacons;
 };
-

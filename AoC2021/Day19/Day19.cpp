@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include <queue>
+#include <deque>
 #include <set>
 
 int main()
@@ -16,39 +16,52 @@ int main()
 	std::ifstream inStrm;
 	inStrm.open(input);
 
-	std::queue<Scanner> scanners;
+	std::deque<Scanner> scanners;
 	
 	for (Scanner s; inStrm >> s;)
 	{
-		scanners.push(s);
+		scanners.push_back(s);
 	}
 
-	Scanner primary = scanners.front();
-	scanners.pop();
-
-	while (!scanners.empty())
+	while (scanners.size() > 1)
 	{
-		Scanner secondary = scanners.front();
-		scanners.pop();
-		if (auto dist = primary.GetScannerOverlap(secondary); dist.has_value())
+		Scanner primary = scanners.front();
+		scanners.pop_front();
+
+		std::deque<Scanner> nextScanners;
+
+		while (!scanners.empty())
 		{
-			primary.MergeScanner(secondary, dist.value());
-			continue;
+			auto secondary = scanners.front();
+			scanners.pop_front();
+
+			bool matchFound = false;
+			for (std::size_t k = 0; !matchFound && k < 24; k++)
+			{
+				if (auto dist = primary.GetScannerOverlap(secondary); dist.has_value())
+				{
+					primary.MergeScanner(secondary, dist.value());
+					matchFound = true;
+				}
+				else
+				{
+					secondary.IndexedRotation(k);
+				}
+			}
+
+			if (!matchFound)
+			{
+				nextScanners.push_back(secondary);
+			}
 		}
 
-		secondary.RotateX();
-		if (auto dist = primary.GetScannerOverlap(secondary); dist.has_value())
-		{
-			primary.MergeScanner(secondary, dist.value());
-			continue;
-		}
-
-		secondary.RotateY();
-		//Give up for now, we'll come back to it
-		scanners.push(secondary);
+		//Send this to the back to give others a chance
+		nextScanners.push_back(primary);
+		std::swap(scanners, nextScanners);
+		std::cout << scanners.size() << std::endl;
 	}
 
-	std::cout << "Part 1: " << scanners.size() << std::endl;
+	std::cout << "Part 1: " << scanners.front().GetBeaconCount() << std::endl;
 
 
 	//std::cout << "Part 2: " << count << std::endl;

@@ -59,40 +59,63 @@ void Scanner::AddBeacon(const BeaconCoords& beacon)
 	m_VisibleBeacons.insert(beacon);
 }
 
-Scanner Scanner::RotateX()
+void Scanner::IndexedRotation(std::size_t index)
 {
-	Scanner rot(m_Id);
-
-	for (auto& coords : m_VisibleBeacons)
+	std::size_t step = index % 24;
+	switch (step)
 	{
-		rot.AddBeacon({ coords.x, coords.z, -coords.y });
+	case 15:
+		RotateY();
+	case 23:
+		RotateY();
+	case 3:
+	case 7:
+	case 19:
+		RotateY();
+		break;
+	case 11:
+		RotateZ();
+		break;
+	default:
+		RotateX();
+		break;
 	}
-
-	return rot;
 }
 
-Scanner Scanner::RotateY()
+void Scanner::RotateX()
 {
-	Scanner rot(m_Id);
+	std::set<BeaconCoords> rot;
 
-	for (auto& coords : m_VisibleBeacons)
+	for (auto coords : m_VisibleBeacons)
 	{
-		rot.AddBeacon({ -coords.z, coords.y, coords.x });
+		rot.insert({ coords.x, coords.z, -coords.y });
 	}
 
-	return rot;
+	std::swap(m_VisibleBeacons, rot);
 }
 
-Scanner Scanner::RotateZ()
+void Scanner::RotateY()
 {
-	Scanner rot(m_Id);
+	std::set<BeaconCoords> rot;
 
-	for (auto& coords : m_VisibleBeacons)
+	for (auto coords : m_VisibleBeacons)
 	{
-		rot.AddBeacon({ coords.y, -coords.x, coords.z });
+		rot.insert({ -coords.z, coords.y, coords.x });
 	}
 
-	return rot;
+	std::swap(m_VisibleBeacons, rot);
+}
+
+void Scanner::RotateZ()
+{
+	std::set<BeaconCoords> rot;
+
+	for (auto coords : m_VisibleBeacons)
+	{
+		rot.insert({ coords.y, -coords.x, coords.z });
+	}
+
+	std::swap(m_VisibleBeacons, rot);
 }
 
 std::optional<BeaconDistance> Scanner::GetScannerOverlap(const Scanner& other)
