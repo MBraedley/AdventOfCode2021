@@ -7,6 +7,7 @@
 #include <vector>
 #include <bitset>
 #include <map>
+#include <set>
 #include <cassert>
 
 int main()
@@ -42,10 +43,32 @@ int main()
 	std::bitset<9> convolve;
 	for (std::size_t i = 0; i < 2; i++)
 	{
+		std::map<std::pair<int, int>, bool> imageNext;
+		//2 step process: generate list of points to check, then check them
+		std::set<std::pair<int, int>> points;
 		for (auto& [pos, on] : image)
 		{
-			convolve.reset();
+			if (on)
+			{
+				points.emplace(pos.first - 1, pos.second - 1);
+				points.emplace(pos.first, pos.second - 1);
+				points.emplace(pos.first + 1, pos.second - 1);
+				points.emplace(pos.first - 1, pos.second);
+				points.emplace(pos);
+				points.emplace(pos.first + 1, pos.second);
+				points.emplace(pos.first - 1, pos.second + 1);
+				points.emplace(pos.first, pos.second + 1);
+				points.emplace(pos.first + 1, pos.second + 1);
+			}
 		}
+
+		for (auto& pos : points)
+		{
+			convolve.reset();
+
+		}
+
+		std::swap(image, imageNext);
 	}
 
 	//std::cout << "Part 1: " << count << std::endl;
