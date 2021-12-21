@@ -1,7 +1,10 @@
 // Day21.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
+#include "GameState.h"
 
 #include <iostream>
+#include <unordered_map>
+#include <vector>
 
 class DeterministicDice
 {
@@ -77,4 +80,49 @@ int main()
 	}
 
 	std::cout << "Part 1: " << std::min(player1Score, player2Score) * dieRollCount << std::endl;
+
+	std::unordered_map<GameState, std::uint64_t> activeStates;
+	activeStates.emplace(GameState(), 1);
+	std::uint64_t p1Wins = 0;
+	std::uint64_t p2Wins = 0;
+
+	while (!activeStates.empty())
+	{
+		std::unordered_map<GameState, std::uint64_t> nextStates;
+		for (const auto& [gs, count] : activeStates)
+		{
+			for (const auto& [ngs, ncount] : gs.RollPlayer1())
+			{
+				if (ngs.HasPlayer1Won())
+				{
+					p1Wins += count * ncount;
+				}
+				else
+				{
+					nextStates[ngs] += count * ncount;
+				}
+			}
+		}
+
+		std::swap(activeStates, nextStates);
+		nextStates.clear();
+
+		for (const auto& [gs, count] : activeStates)
+		{
+			for (const auto& [ngs, ncount] : gs.RollPlayer2())
+			{
+				if (ngs.HasPlayer2Won())
+				{
+					p2Wins += count * ncount;
+				}
+				else
+				{
+					nextStates[ngs] += count * ncount;
+				}
+			}
+		}
+		std::swap(activeStates, nextStates);
+	}
+
+	std::cout << "Part 2: " << std::max(p1Wins, p2Wins) << std::endl;
 }
